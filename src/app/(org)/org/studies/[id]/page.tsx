@@ -212,7 +212,7 @@ export default function OrgStudyPage() {
   function togglePanelAll(panelId: string) {
     const ids = visibleMembers.filter(m => m.panelId === panelId).map(m => m.id)
     const allSelected = ids.every(id => selectedMembers.includes(id))
-    setSelectedMembers(prev => allSelected ? prev.filter(id => !ids.includes(id)) : [...new Set([...prev, ...ids])])
+    setSelectedMembers(prev => allSelected ? prev.filter(id => !ids.includes(id)) : Array.from(new Set([...prev, ...ids])))
   }
 
   function toggleMember(memberId: string) {
@@ -222,7 +222,7 @@ export default function OrgStudyPage() {
   function selectAll() { setSelectedMembers(visibleMembers.map(m => m.id)) }
   function clearAll() { setSelectedMembers([]) }
 
-  const ALL_NATIONS = [...new Set(ALL_MEMBERS.map(m => m.nation))].sort()
+  const ALL_NATIONS = Array.from(new Set(ALL_MEMBERS.map(m => m.nation))).sort()
 
   const visibleMembers = ALL_MEMBERS.filter(m => {
     if (viewMode === 'panels' && filterPanel === 'individuals') return m.panelId === null
