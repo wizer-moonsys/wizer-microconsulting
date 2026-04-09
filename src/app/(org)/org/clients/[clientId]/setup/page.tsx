@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { createClient } from "@/lib/supabase/client";
 import Link from "next/link";
 import { ArrowLeft, Loader2, Plus, Trash2, GripVertical } from "lucide-react";
+import { Suspense } from "react";
 
 // âââ Types ââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
@@ -41,7 +42,7 @@ const STATUS_OPTIONS: { value: ActivationStatus; label: string }[] = [
 
 // âââ Page âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
-export default function EngagementSetupPage({
+function EngagementSetupInner({
   params,
 }: {
   params: { clientId: string };
@@ -411,5 +412,23 @@ export default function EngagementSetupPage({
         </div>
       </form>
     </div>
+  );
+}
+
+export default function EngagementSetupPage({
+  params,
+}: {
+  params: { clientId: string };
+}) {
+  return (
+    <Suspense
+      fallback={
+        <div className="flex items-center justify-center h-64">
+          <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
+        </div>
+      }
+    >
+      <EngagementSetupInner params={params} />
+    </Suspense>
   );
 }
