@@ -1,8 +1,8 @@
 import { createClient } from "@/lib/supabase/server";
 import { redirect } from "next/navigation";
+import type { ReactNode } from "react";
 import {
   CheckCircle2,
-  Circle,
   Clock,
   AlertCircle,
   MessageSquare,
@@ -30,7 +30,7 @@ interface Activation {
 
 const STATUS_CONFIG: Record<
   ActivationStatus,
-  { label: string; color: string; bg: string; icon: React.ReactNode; description: string }
+  { label: string; color: string; bg: string; icon: ReactNode; description: string }
 > = {
   draft: {
     label: "Being prepared",
@@ -184,9 +184,6 @@ export default async function ClientDashboardPage() {
           return (
             <div
               key={activation.id}
-              className="rounded-xl border border-border bg-card shadow-sm overflow-hidden"
-            >
-   key={activation.id}
               className="rounded-xl border border-border bg-card shadow-sm overflow-hidden"
             >
               {/* Card header */}
