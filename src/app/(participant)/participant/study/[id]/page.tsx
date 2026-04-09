@@ -18,7 +18,7 @@ const STUDY_DATA: Record<string, {
   previousQuestions: { n: number; summary: string }[]
 }> = {
   'study-1': {
-    title: 'Climate Policy Priorities — Community Voice',
+    title: 'Climate Policy Priorities â Community Voice',
     org: 'Tranby College',
     ratePerQuestion: 18,
     totalQuestions: 8,
@@ -28,7 +28,7 @@ const STUDY_DATA: Record<string, {
       type: 'scale',
     },
     previousQuestions: [
-      { n: 1, summary: 'Which climate issue needs the most urgent attention? — You answered: Water security' },
+      { n: 1, summary: 'Which climate issue needs the most urgent attention? â You answered: Water security' },
     ],
   },
   'study-2': {
@@ -60,7 +60,7 @@ export default function StudyQuestionPage() {
     return (
       <div className="text-center py-20 text-gray-400">
         <p>Study not found.</p>
-        <button onClick={() => router.push('/participant')} className="text-wizer-purple text-sm mt-2 block mx-auto hover:underline">← Back</button>
+        <button onClick={() => router.push('/participant')} className="text-wizer-purple text-sm mt-2 block mx-auto hover:underline">â Back</button>
       </div>
     )
   }
@@ -112,7 +112,7 @@ export default function StudyQuestionPage() {
           })}
         </div>
         <p className="text-xs text-gray-400 mt-2">
-          Question {study.currentQuestion} of {study.totalQuestions} · {upcomingCount} more to come · +${study.ratePerQuestion} for this response
+          Question {study.currentQuestion} of {study.totalQuestions} Â· {upcomingCount} more to come Â· +{study.ratePerQuestion}pts for this response
         </p>
       </div>
 
@@ -132,8 +132,8 @@ export default function StudyQuestionPage() {
       {submitted ? (
         <div className="bg-white rounded-xl border border-green-200 p-8 text-center space-y-3">
           <CheckCircle className="w-10 h-10 text-green-500 mx-auto" />
-          <p className="font-semibold text-gray-900">Thank you — response recorded!</p>
-          <p className="text-sm text-gray-500">+${study.ratePerQuestion} has been added to your balance.</p>
+          <p className="font-semibold text-gray-900">Thank you â response recorded!</p>
+          <p className="text-sm text-gray-500">+{study.ratePerQuestion}pts has been added to your balance.</p>
           {upcomingCount > 0 && (
             <p className="text-xs text-gray-400 bg-gray-50 rounded-lg px-3 py-2">
               Question {study.currentQuestion + 1} will open in approximately {study.currentQuestion === 1 ? '7' : '7'} days. We'll let you know.
@@ -150,7 +150,7 @@ export default function StudyQuestionPage() {
         <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-5">
           <div className="flex items-center gap-2 text-xs text-wizer-purple font-medium">
             <Clock className="w-3.5 h-3.5" />
-            Question {study.currentQuestion} of {study.totalQuestions} — open now
+            Question {study.currentQuestion} of {study.totalQuestions} â open now
           </div>
 
           <p className="text-gray-900 font-medium text-lg leading-snug">{question.text}</p>
@@ -177,7 +177,7 @@ export default function StudyQuestionPage() {
             <textarea
               value={openText}
               onChange={e => setOpenText(e.target.value)}
-              placeholder="Share your thoughts…"
+              placeholder="Share your thoughtsâ¦"
               rows={5}
               className="w-full border border-gray-200 rounded-xl px-4 py-3 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-wizer-purple resize-none"
             />
@@ -228,7 +228,7 @@ export default function StudyQuestionPage() {
             disabled={!isAnswered}
             className="w-full bg-wizer-purple hover:bg-wizer-purple-dark disabled:opacity-40 text-white py-3 rounded-xl font-semibold text-sm transition-colors"
           >
-            Submit Response · +${study.ratePerQuestion}
+            Submit Response Â· +{study.ratePerQuestion}pts
           </button>
         </div>
       )}
@@ -240,7 +240,7 @@ export default function StudyQuestionPage() {
           {Array.from({ length: Math.min(upcomingCount, 3) }).map((_, i) => (
             <div key={i} className="flex items-center gap-2 text-sm text-gray-300">
               <Lock className="w-3.5 h-3.5 shrink-0" />
-              <span>Question {study.currentQuestion + 1 + i} — opens in ~{(i + 1) * 7} days</span>
+              <span>Question {study.currentQuestion + 1 + i} â opens in ~{(i + 1) * 7} days</span>
             </div>
           ))}
           {upcomingCount > 3 && (
