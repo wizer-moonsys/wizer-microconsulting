@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect, notFound } from "next/navigation";
 import Link from "next/link";
 import {
   ArrowLeft,
@@ -71,75 +70,93 @@ function formatDate(iso: string | null) {
 
 // âââ Page âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
+const DEMO_CLIENT = {
+  id: "demo-client-1",
+  full_name: "Acme Corp",
+  email: "contact@acmecorp.com",
+  created_at: "2026-04-01T00:00:00Z",
+};
+
+const DEMO_ACTIVATIONS: Activation[] = [
+  {
+    id: "demo-act-1",
+    title: "Q2 Customer Insights Study",
+    description: "Understanding how clients experience onboarding and where we can improve.",
+    status: "active",
+    target_responses: 50,
+    start_date: "2026-05-01",
+    end_date: "2026-06-15",
+    created_at: "2026-04-28T00:00:00Z",
+    response_count: 32,
+    question_count: 8,
+  },
+  {
+    id: "demo-act-2",
+    title: "Brand Awareness Deep-Dive",
+    description: "A completed study examining brand recognition among mid-market buyers.",
+    status: "completed",
+    target_responses: 40,
+    start_date: "2026-03-10",
+    end_date: "2026-04-20",
+    created_at: "2026-03-01T00:00:00Z",
+    response_count: 40,
+    question_count: 10,
+  },
+];
+
 export default async function ClientDetailPage({
   params,
 }: {
   params: { clientId: string };
 }) {
-  const supabase = await createClient();
+  let client = DEMO_CLIENT;
+  let activations: Activation[] = DEMO_ACTIVATIONS;
 
-  // Auth guard
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  const { data: orgAdminProfile } = await supabase
-    .from("profiles")
-    .select("role, organization_id")
-    .eq("id", user.id)
-    .single();
+    if (user) {
+      const { data: orgAdminProfile } = await supabase
+        .from("profiles")
+        .select("role, organization_id")
+        .eq("id", user.id)
+        .single();
 
-  if (!orgAdminProfile || orgAdminProfile.role !== "org_admin") redirect("/");
+      if (orgAdminProfile?.role === "org_admin") {
+        const orgId = orgAdminProfile.organization_id;
+        const { data: fetchedClient } = await supabase
+          .from("profiles")
+          .select("id, full_name, email, created_at, organization_id")
+          .eq("id", params.clientId)
+          .eq("role", "client")
+          .eq("organization_id", orgId)
+          .single();
 
-  const orgId = orgAdminProfile.organization_id;
+        if (fetchedClient) {
+          client = fetchedClient;
+          const { data: rawActivations } = await supabase
+            .from("activations")
+            .select(`id, title, description, status, target_responses, start_date, end_date, created_at`)
+            .eq("client_id", params.clientId)
+            .eq("org_id", orgId)
+            .order("created_at", { ascending: false });
 
-  // Fetch the client profile (must belong to same org)
-  const { data: client } = await supabase
-    .from("profiles")
-    .select("id, full_name, email, created_at, organization_id")
-    .eq("id", params.clientId)
-    .eq("role", "client")
-    .eq("organization_id", orgId)
-    .single();
-
-  if (!client) notFound();
-
-  // Fetch all activations for this client
-  const { data: rawActivations } = await supabase
-    .from("activations")
-    .select(`
-      id,
-      title,
-      description,
-      status,
-      target_responses,
-      start_date,
-      end_date,
-      created_at
-    `)
-    .eq("client_id", params.clientId)
-    .eq("org_id", orgId)
-    .order("created_at", { ascending: false });
-
-  // Enrich each activation with response + question counts
-  const activations: Activation[] = await Promise.all(
-    (rawActivations || []).map(async (a) => {
-      const [{ count: responseCount }, { count: questionCount }] = await Promise.all([
-        supabase
-          .from("question_responses")
-          .select("id", { count: "exact", head: true })
-          .eq("activation_id", a.id),
-        supabase
-          .from("activation_questions")
-          .select("id", { count: "exact", head: true })
-          .eq("activation_id", a.id),
-      ]);
-      return {
-        ...a,
-        response_count: responseCount ?? 0,
-        question_count: questionCount ?? 0,
-      };
-    })
-  );
+          activations = await Promise.all(
+            (rawActivations || []).map(async (a) => {
+              const [{ count: responseCount }, { count: questionCount }] = await Promise.all([
+                supabase.from("question_responses").select("id", { count: "exact", head: true }).eq("activation_id", a.id),
+                supabase.from("activation_questions").select("id", { count: "exact", head: true }).eq("activation_id", a.id),
+              ]);
+              return { ...a, response_count: responseCount ?? 0, question_count: questionCount ?? 0 };
+            })
+          );
+        }
+      }
+    }
+  } catch {
+    // fallback to demo data
+  }
 
   const activeEngagement = activations.find((a) => a.status === "active");
   const totalResponses = activations.reduce((sum, a) => sum + a.response_count, 0);
@@ -222,7 +239,7 @@ export default async function ClientDetailPage({
           {activations.map((activation) => {
             const pct =
               activation.target_responses && activation.target_responses > 0
-                ? Math.min(100, Math.round((activation.response_count / activation.target_responses) * 100))
+                  ? Math.min(100, Math.round((activation.response_count / activation.target_responses) * 100))
                 : null;
 
             return (
@@ -236,7 +253,7 @@ export default async function ClientDetailPage({
                       <StatusBadge status={activation.status} />
                     </div>
                     <h3 className="text-sm font-semibold text-foreground mt-2">
-                      {activation.title}
+                     {activation.title}
                     </h3>
                     {activation.description && (
                       <p className="text-sm text-muted-foreground mt-1 line-clamp-2">

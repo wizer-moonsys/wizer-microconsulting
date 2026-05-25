@@ -18,6 +18,11 @@ interface Study {
   windowUnit: string
   status: 'submitted' | 'live' | 'complete' | 'rejected'
   submittedAt: string
+  assignedOrg?: string
+  inviteSent?: boolean
+  cohortModel?: string
+  routedOrg?: string
+  routed?: boolean
 }
 
 const statusConfig = {
@@ -27,12 +32,112 @@ const statusConfig = {
   rejected: { label: 'Returned', color: 'bg-red-100 text-red-600', icon: AlertCircle },
 }
 
+// ── Demo data (shown when no real studies exist in localStorage) ──────────────
+const DEMO_STUDIES: Study[] = [
+  {
+    id: 'demo-1',
+    title: 'Housing Insecurity in Regional NSW',
+    description: 'Exploring lived experiences of housing instability among Indigenous communities in regional and rural New South Wales.',
+    isIndigenous: true,
+    areas: ['New South Wales', 'Regional NSW'],
+    participants: 40,
+    ratePerPerson: 25,
+    totalBudget: 1000,
+    questions: [
+      { id: 'q1', text: 'Have you experienced difficulty securing stable housing in the past 12 months?', type: 'yes_no' },
+      { id: 'q2', text: 'What is the biggest barrier to stable housing in your community?', type: 'open' },
+      { id: 'q3', text: 'How would you rate the availability of affordable housing in your area?', type: 'scale' },
+      { id: 'q4', text: 'Which government support programs have you accessed?', type: 'multiple_choice' },
+    ],
+    windowValue: 14,
+    windowUnit: 'days',
+    status: 'submitted',
+    submittedAt: '2026-05-18T09:30:00Z',
+    assignedOrg: 'tranby',
+    inviteSent: false,
+    cohortModel: 'same_panel',
+  },
+  {
+    id: 'demo-2',
+    title: 'Type 2 Diabetes Management in Urban Communities',
+    description: 'Investigating self-management practices and barriers to healthcare access among urban Australians living with Type 2 diabetes.',
+    isIndigenous: false,
+    areas: ['Victoria', 'Melbourne'],
+    participants: 80,
+    ratePerPerson: 30,
+    totalBudget: 2400,
+    questions: [
+      { id: 'q1', text: 'How often do you monitor your blood glucose levels?', type: 'multiple_choice' },
+      { id: 'q2', text: 'What is your biggest challenge in managing your diabetes?', type: 'open' },
+      { id: 'q3', text: 'How confident do you feel managing your condition day-to-day?', type: 'scale' },
+    ],
+    windowValue: 21,
+    windowUnit: 'days',
+    status: 'live',
+    submittedAt: '2026-05-01T14:00:00Z',
+    assignedOrg: 'cad',
+    inviteSent: true,
+    cohortModel: 'same_panel',
+    routedOrg: 'cad',
+    routed: true,
+  },
+  {
+    id: 'demo-3',
+    title: 'Remote Work Impact on Work-Life Balance',
+    description: 'Examining how remote and hybrid work arrangements have affected wellbeing, productivity, and family dynamics in Melbourne.',
+    isIndigenous: false,
+    areas: ['Victoria'],
+    participants: 60,
+    ratePerPerson: 20,
+    totalBudget: 1200,
+    questions: [
+      { id: 'q1', text: 'Has remote work improved your work-life balance?', type: 'yes_no' },
+      { id: 'q2', text: 'How many days per week do you work from home?', type: 'multiple_choice' },
+      { id: 'q3', text: 'How has remote work affected your productivity?', type: 'scale' },
+      { id: 'q4', text: 'What support would help you most in a remote setting?', type: 'open' },
+    ],
+    windowValue: 7,
+    windowUnit: 'days',
+    status: 'live',
+    submittedAt: '2026-04-15T11:00:00Z',
+    assignedOrg: 'mrc',
+    inviteSent: true,
+    cohortModel: 'same_panel',
+    routedOrg: 'mrc',
+    routed: true,
+  },
+  {
+    id: 'demo-4',
+    title: 'Digital Literacy Among Older Australians',
+    description: 'Assessing digital skills confidence and barriers to technology adoption among Australians aged 65 and over.',
+    isIndigenous: false,
+    areas: ['New South Wales'],
+    participants: 50,
+    ratePerPerson: 20,
+    totalBudget: 1000,
+    questions: [
+      { id: 'q1', text: 'How comfortable are you using smartphones or tablets?', type: 'scale' },
+      { id: 'q2', text: 'What technology do you use most frequently?', type: 'multiple_choice' },
+      { id: 'q3', text: 'What is the biggest barrier to using digital services?', type: 'open' },
+    ],
+    windowValue: 10,
+    windowUnit: 'days',
+    status: 'complete',
+    submittedAt: '2026-03-01T08:00:00Z',
+    assignedOrg: 'mrc',
+    inviteSent: true,
+    cohortModel: 'same_panel',
+    routedOrg: 'mrc',
+    routed: true,
+  },
+]
+
 export default function AdminDashboard() {
   const [studies, setStudies] = useState<Study[]>([])
 
   useEffect(() => {
     const stored: Study[] = JSON.parse(localStorage.getItem('wizer_studies') ?? '[]')
-    setStudies(stored)
+    setStudies(stored.length > 0 ? stored : DEMO_STUDIES)
   }, [])
 
   const queue = studies.filter(s => s.status === 'submitted')

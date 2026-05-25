@@ -2,7 +2,7 @@
 
 import { useEffect, useState } from 'react'
 import { useParams, useRouter } from 'next/navigation'
-import { ChevronLeft, Users, MessageSquare, Calendar, DollarSign, MapPin, CheckCircle, XCircle, ArrowRight } from 'lucide-react'
+import { ChevronLeft, Users, MessageSquare, Calendar, DollarSign, MapPin, CheckCircle, XCircle } from 'lucide-react'
 import Link from 'next/link'
 
 interface Question {
@@ -46,6 +46,128 @@ const ORGS = [
   { id: 'mrc', name: 'Melbourne Research Collective', type: 'Community Organisation', location: 'Victoria', indigenous: false },
 ]
 
+// ── Demo studies (fallback when localStorage is empty) ───────────────────────
+const DEMO_STUDIES: Study[] = [
+  {
+    id: 'demo-1',
+    title: 'Housing Insecurity in Regional NSW',
+    description: 'Exploring lived experiences of housing instability among Indigenous communities in regional and rural New South Wales.',
+    isIndigenous: true,
+    areas: ['New South Wales', 'Regional NSW'],
+    cohortModel: 'same_panel',
+    participants: 40,
+    ratePerPerson: 25,
+    totalBudget: 1000,
+    questions: [
+      { id: 'q1', text: 'Have you experienced difficulty securing stable housing in the past 12 months?', type: 'yes_no' },
+      { id: 'q2', text: 'What is the biggest barrier to stable housing in your community?', type: 'open' },
+      { id: 'q3', text: 'How would you rate the availability of affordable housing in your area?', type: 'scale' },
+      { id: 'q4', text: 'Which government support programs have you accessed?', type: 'multiple_choice', choices: ['NRAS', 'Community Housing', 'Private rental assistance', 'None'] },
+    ],
+    windowValue: 14,
+    windowUnit: 'days',
+    status: 'submitted',
+    submittedAt: '2026-05-18T09:30:00Z',
+    routedOrg: 'tranby',
+    routed: false,
+  },
+  {
+    id: 'demo-2',
+    title: 'Type 2 Diabetes Management in Urban Communities',
+    description: 'Investigating self-management practices and barriers to healthcare access among urban Australians living with Type 2 diabetes.',
+    isIndigenous: false,
+    areas: ['Victoria', 'Melbourne'],
+    cohortModel: 'same_panel',
+    participants: 80,
+    ratePerPerson: 30,
+    totalBudget: 2400,
+    questions: [
+      { id: 'q1', text: 'How often do you monitor your blood glucose levels?', type: 'multiple_choice', choices: ['Multiple times daily', 'Once daily', 'A few times a week', 'Rarely'] },
+      { id: 'q2', text: 'What is your biggest challenge in managing your diabetes?', type: 'open' },
+      { id: 'q3', text: 'How confident do you feel managing your condition day-to-day?', type: 'scale' },
+    ],
+    windowValue: 21,
+    windowUnit: 'days',
+    status: 'live',
+    submittedAt: '2026-05-01T14:00:00Z',
+    routedOrg: 'cad',
+    routed: true,
+    routeNote: 'Please prioritise participants who have been diagnosed in the last 5 years.',
+  },
+  {
+    id: 'demo-3',
+    title: 'Remote Work Impact on Work-Life Balance',
+    description: 'Examining how remote and hybrid work arrangements have affected wellbeing, productivity, and family dynamics in Melbourne.',
+    isIndigenous: false,
+    areas: ['Victoria'],
+    cohortModel: 'same_panel',
+    participants: 60,
+    ratePerPerson: 20,
+    totalBudget: 1200,
+    questions: [
+      { id: 'q1', text: 'Has remote work improved your work-life balance?', type: 'yes_no' },
+      { id: 'q2', text: 'How many days per week do you work from home?', type: 'multiple_choice', choices: ['1-2 days', '3-4 days', '5 days (fully remote)', 'None'] },
+      { id: 'q3', text: 'How has remote work affected your productivity?', type: 'scale' },
+      { id: 'q4', text: 'What support would help you most in a remote setting?', type: 'open' },
+    ],
+    windowValue: 7,
+    windowUnit: 'days',
+    status: 'live',
+    submittedAt: '2026-04-15T11:00:00Z',
+    routedOrg: 'mrc',
+    routed: true,
+  },
+  {
+    id: 'demo-4',
+    title: 'Digital Literacy Among Older Australians',
+    description: 'Assessing digital skills confidence and barriers to technology adoption among Australians aged 65 and over.',
+    isIndigenous: false,
+    areas: ['New South Wales'],
+    cohortModel: 'same_panel',
+    participants: 50,
+    ratePerPerson: 20,
+    totalBudget: 1000,
+    questions: [
+      { id: 'q1', text: 'How comfortable are you using smartphones or tablets?', type: 'scale' },
+      { id: 'q2', text: 'What technology do you use most frequently?', type: 'multiple_choice', choices: ['Smartphone', 'Tablet', 'Laptop/Desktop', 'None'] },
+      { id: 'q3', text: 'What is the biggest barrier to using digital services?', type: 'open' },
+    ],
+    windowValue: 10,
+    windowUnit: 'days',
+    status: 'complete',
+    submittedAt: '2026-03-01T08:00:00Z',
+    routedOrg: 'mrc',
+    routed: true,
+  },
+]
+
+// Mock participant data per study
+const DEMO_PARTICIPANTS: Record<string, { name: string; status: 'responded' | 'invited' }[]> = {
+  'demo-2': [
+    { name: 'Alice Nguyen', status: 'responded' },
+    { name: 'Robert Briggs', status: 'responded' },
+    { name: 'Mary Thorpe', status: 'invited' },
+    { name: 'Emmanuel Torres', status: 'responded' },
+    { name: 'Patricia Walsh', status: 'invited' },
+    { name: 'David Kim', status: 'responded' },
+    { name: 'Sandra Murphy', status: 'responded' },
+  ],
+  'demo-3': [
+    { name: 'Liam Chen', status: 'responded' },
+    { name: 'Amara Osei', status: 'responded' },
+    { name: 'Tom Rawlings', status: 'invited' },
+    { name: 'Fatima Hassan', status: 'responded' },
+    { name: 'Grace Petrov', status: 'invited' },
+  ],
+  'demo-4': [
+    { name: 'Joan Whitmore', status: 'responded' },
+    { name: 'Barry Fletcher', status: 'responded' },
+    { name: 'Doris Chan', status: 'responded' },
+    { name: 'Kevin Park', status: 'responded' },
+    { name: 'Norma Gutierrez', status: 'responded' },
+  ],
+}
+
 export default function AdminStudyReviewPage() {
   const { id } = useParams<{ id: string }>()
   const router = useRouter()
@@ -58,7 +180,20 @@ export default function AdminStudyReviewPage() {
   const [routeNote, setRouteNote] = useState('')
   const [routed, setRouted] = useState(false)
 
+  const isDemo = id?.startsWith('demo-')
+
   useEffect(() => {
+    if (isDemo) {
+      const found = DEMO_STUDIES.find(s => s.id === id) ?? null
+      if (found) {
+        setStudy(found)
+        setNote(found.reviewNote ?? '')
+        setRoutedOrg(found.routedOrg ?? '')
+        setRouteNote(found.routeNote ?? '')
+        setRouted(found.routed ?? false)
+      }
+      return
+    }
     const stored: Study[] = JSON.parse(localStorage.getItem('wizer_studies') ?? '[]')
     const found = stored.find(s => s.id === id)
     if (found) {
@@ -68,9 +203,14 @@ export default function AdminStudyReviewPage() {
       setRouteNote(found.routeNote ?? '')
       setRouted(found.routed ?? false)
     }
-  }, [id])
+  }, [id, isDemo])
 
   function saveToStorage(updates: Partial<Study>) {
+    if (isDemo) {
+      // For demo studies, just update local state
+      setStudy(prev => prev ? { ...prev, ...updates } : prev)
+      return
+    }
     const stored: Study[] = JSON.parse(localStorage.getItem('wizer_studies') ?? '[]')
     const updated = stored.map(s => s.id === id ? { ...s, ...updates } : s)
     localStorage.setItem('wizer_studies', JSON.stringify(updated))
@@ -105,6 +245,8 @@ export default function AdminStudyReviewPage() {
   const totalDue = grandTotal
   const isReviewed = study.status !== 'submitted'
   const selectedOrg = ORGS.find(o => o.id === routedOrg)
+  const participants = DEMO_PARTICIPANTS[study.id] ?? []
+  const responded = participants.filter(p => p.status === 'responded')
 
   return (
     <div className="max-w-3xl mx-auto space-y-6">
@@ -126,8 +268,15 @@ export default function AdminStudyReviewPage() {
       {/* Already reviewed banner */}
       {isReviewed && !done && (
         <div className="bg-blue-50 border border-blue-200 rounded-xl px-4 py-3 text-sm text-blue-700">
-          This study has already been <strong>{study.status === 'live' ? 'approved' : 'returned'}</strong>.
+          This study has already been <strong>{study.status === 'live' ? 'approved' : study.status === 'complete' ? 'completed' : 'returned'}</strong>.
           {study.reviewNote && <span className="block mt-1 text-blue-600">Note: {study.reviewNote}</span>}
+        </div>
+      )}
+
+      {/* Demo notice */}
+      {isDemo && (
+        <div className="bg-amber-50 border border-amber-200 rounded-xl px-4 py-3 text-sm text-amber-700">
+          This is demo data — actions below update the view temporarily and won't persist.
         </div>
       )}
 
@@ -230,6 +379,12 @@ export default function AdminStudyReviewPage() {
                   rows={2}
                   className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-wizer-purple resize-none"
                 />
+                <button
+                  onClick={sendToOrg}
+                  className="text-sm text-wizer-purple hover:text-wizer-purple-dark font-medium"
+                >
+                  Send to {selectedOrg?.name} →
+                </button>
               </div>
             )}
           </>
@@ -287,7 +442,6 @@ export default function AdminStudyReviewPage() {
             <span className="text-wizer-purple-dark text-base">${grandTotal.toLocaleString()}</span>
           </div>
         </div>
-        {/* Escrow split — admin view only */}
         <div className="grid grid-cols-3 gap-3 pt-1">
           {[
             { label: 'To participants', amount: participantPool, color: 'bg-green-50 border-green-200 text-green-700' },
@@ -303,7 +457,7 @@ export default function AdminStudyReviewPage() {
       </div>
 
       {/* Participants — shown once live or complete */}
-      {(study.status === 'live' || study.status === 'complete') && (
+      {(study.status === 'live' || study.status === 'complete') && participants.length > 0 && (
         <div className="bg-white rounded-xl border border-gray-200 p-5 space-y-4">
           <div className="flex items-center justify-between">
             <h2 className="text-sm font-semibold text-gray-700 uppercase tracking-wide">Participants</h2>
@@ -312,15 +466,8 @@ export default function AdminStudyReviewPage() {
             </span>
           </div>
 
-          {/* Mock participant rows — replace with live data when Supabase is wired */}
           <div className="divide-y divide-gray-100">
-            {[
-              { name: 'Alice Nguyen', status: 'responded', question: 1 },
-              { name: 'Robert Briggs', status: 'responded', question: 1 },
-              { name: 'Mary Thorpe', status: 'invited', question: null },
-              { name: 'Emmanuel Torres', status: 'responded', question: 1 },
-              { name: 'Patricia Walsh', status: 'invited', question: null },
-            ].map((p, i) => (
+            {participants.map((p, i) => (
               <div key={i} className="flex items-center justify-between py-3">
                 <div className="flex items-center gap-3">
                   <div className="w-7 h-7 rounded-full bg-wizer-purple-light text-wizer-purple-dark flex items-center justify-center text-xs font-bold">
@@ -341,7 +488,10 @@ export default function AdminStudyReviewPage() {
 
           <div className="bg-gray-50 rounded-lg px-4 py-3 flex justify-between text-sm">
             <span className="text-gray-500">Response rate</span>
-            <span className="font-semibold text-gray-900">3 of 5 invited <span className="text-gray-400 font-normal">(60%)</span></span>
+            <span className="font-semibold text-gray-900">
+              {responded.length} of {participants.length} invited{' '}
+              <span className="text-gray-400 font-normal">({Math.round((responded.length / participants.length) * 100)}%)</span>
+            </span>
           </div>
         </div>
       )}

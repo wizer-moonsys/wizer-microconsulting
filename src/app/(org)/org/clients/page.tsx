@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import Link from "next/link";
 import { Users, Plus, ChevronRight, Clock, CheckCircle2, Circle, AlertCircle } from "lucide-react";
 
@@ -61,73 +60,77 @@ function ProgressBar({ current, target }: { current: number; target: number | nu
 
 // âââ Page âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
+const DEMO_CLIENTS: ClientWithEngagement[] = [
+  {
+    id: "demo-client-1",
+    full_name: "Acme Corp",
+    email: "contact@acmecorp.com",
+    created_at: "2026-04-01T00:00:00Z",
+    activation: { id: "demo-act-1", title: "Q2 Customer Insights Study", status: "active", target_responses: 50, response_count: 32 },
+  },
+  {
+    id: "demo-client-2",
+    full_name: "Blue Horizon Ltd",
+    email: "info@bluehorizon.com",
+    created_at: "2026-04-15T00:00:00Z",
+    activation: { id: "demo-act-2", title: "Pricing Perception Research", status: "draft", target_responses: 30, response_count: 0 },
+  },
+  {
+    id: "demo-client-3",
+    full_name: "NextWave Media",
+    email: "hello@nextwavemedia.com",
+    created_at: "2026-03-10T00:00:00Z",
+    activation: { id: "demo-act-3", title: "Brand Awareness Deep-Dive", status: "completed", target_responses: 40, response_count: 40 },
+  },
+  {
+    id: "demo-client-4",
+    full_name: "Greenfield Partners",
+    email: "team@greenfieldpartners.com",
+    created_at: "2026-05-01T00:00:00Z",
+    activation: null,
+  },
+];
+
 export default async function OrgClientsPage() {
-  const supabase = await createClient();
+  let clientsWithEngagements: ClientWithEngagement[] = DEMO_CLIENTS;
 
-  // Verify org admin session
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, organization_id")
-    .eq("id", user.id)
-    .single();
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role, organization_id")
+        .eq("id", user.id)
+        .single();
 
-  if (!profile || profile.role !== "org_admin") redirect("/");
+      if (profile?.role === "org_admin") {
+        const orgId = profile.organization_id;
+        const { data: clients } = await supabase
+          .from("profiles")
+          .select(`id, full_name, email, created_at, activations!activations_client_id_fkey (id, title, status, target_responses)`)
+          .eq("role", "client")
+          .eq("organization_id", orgId)
+          .order("full_name", { ascending: true });
 
-  const orgId = profile.organization_id;
-
-  // Fetch all clients in this org with their latest activation
-  const { data: clients, error } = await supabase
-    .from("profiles")
-    .select(`
-      id,
-      full_name,
-      email,
-      created_at,
-      activations!activations_client_id_fkey (
-        id,
-        title,
-        status,
-        target_responses
-      )
-    `)
-    .eq("role", "client")
-    .eq("organization_id", orgId)
-    .order("full_name", { ascending: true });
-
-  if (error) console.error("Error fetching clients:", error);
-
-  // Flatten: for each client, grab the most recent activation + its response count
-  const clientsWithEngagements: ClientWithEngagement[] = await Promise.all(
-    (clients || []).map(async (c: any) => {
-      const activations = Array.isArray(c.activations) ? c.activations : [];
-      // Take the most recently created activation (or active one)
-      const activation = activations.find((a: any) => a.status === "active")
-        ?? activations[activations.length - 1]
-        ?? null;
-
-      let responseCount = 0;
-      if (activation) {
-        const { count } = await supabase
-          .from("question_responses")
-          .select("id", { count: "exact", head: true })
-          .eq("activation_id", activation.id);
-        responseCount = count ?? 0;
+        clientsWithEngagements = await Promise.all(
+          (clients || []).map(async (c: any) => {
+            const activations = Array.isArray(c.activations) ? c.activations : [];
+            const activation = activations.find((a: any) => a.status === "active") ?? activations[activations.length - 1] ?? null;
+            let responseCount = 0;
+            if (activation) {
+              const { count } = await supabase.from("question_responses").select("id", { count: "exact", head: true }).eq("activation_id", activation.id);
+              responseCount = count ?? 0;
+            }
+            return { id: c.id, full_name: c.full_name, email: c.email, created_at: c.created_at, activation: activation ? { ...activation, response_count: responseCount } : null };
+          })
+        );
       }
-
-      return {
-        id: c.id,
-        full_name: c.full_name,
-        email: c.email,
-        created_at: c.created_at,
-        activation: activation
-          ? { ...activation, response_count: responseCount }
-          : null,
-      };
-    })
-  );
+    }
+  } catch {
+    // fallback to demo data
+  }
 
   return (
     <div className="p-6 max-w-4xl mx-auto">

@@ -35,13 +35,73 @@ const statusConfig = {
 const filters = ['All', 'Under Review', 'Live', 'Complete', 'Returned'] as const
 type Filter = typeof filters[number]
 
+// ── Demo data (shown when no real studies exist in localStorage) ──────────────
+const DEMO_STUDIES: Study[] = [
+  {
+    id: 'demo-1',
+    title: 'Housing Insecurity in Regional NSW',
+    isIndigenous: true,
+    participants: 40,
+    totalBudget: 1000,
+    questions: [{ id: 'q1' }, { id: 'q2' }, { id: 'q3' }, { id: 'q4' }],
+    windowValue: 14,
+    windowUnit: 'days',
+    status: 'submitted',
+    submittedAt: '2026-05-18T09:30:00Z',
+    assignedOrg: 'tranby',
+    inviteSent: false,
+  },
+  {
+    id: 'demo-2',
+    title: 'Type 2 Diabetes Management in Urban Communities',
+    isIndigenous: false,
+    participants: 80,
+    totalBudget: 2400,
+    questions: [{ id: 'q1' }, { id: 'q2' }, { id: 'q3' }],
+    windowValue: 21,
+    windowUnit: 'days',
+    status: 'live',
+    submittedAt: '2026-05-01T14:00:00Z',
+    assignedOrg: 'cad',
+    inviteSent: true,
+  },
+  {
+    id: 'demo-3',
+    title: 'Remote Work Impact on Work-Life Balance',
+    isIndigenous: false,
+    participants: 60,
+    totalBudget: 1200,
+    questions: [{ id: 'q1' }, { id: 'q2' }, { id: 'q3' }, { id: 'q4' }],
+    windowValue: 7,
+    windowUnit: 'days',
+    status: 'live',
+    submittedAt: '2026-04-15T11:00:00Z',
+    assignedOrg: 'mrc',
+    inviteSent: true,
+  },
+  {
+    id: 'demo-4',
+    title: 'Digital Literacy Among Older Australians',
+    isIndigenous: false,
+    participants: 50,
+    totalBudget: 1000,
+    questions: [{ id: 'q1' }, { id: 'q2' }, { id: 'q3' }],
+    windowValue: 10,
+    windowUnit: 'days',
+    status: 'complete',
+    submittedAt: '2026-03-01T08:00:00Z',
+    assignedOrg: 'mrc',
+    inviteSent: true,
+  },
+]
+
 export default function EngagementsPage() {
   const [studies, setStudies] = useState<Study[]>([])
   const [filter, setFilter] = useState<Filter>('All')
 
   useEffect(() => {
     const stored: Study[] = JSON.parse(localStorage.getItem('wizer_studies') ?? '[]')
-    setStudies(stored)
+    setStudies(stored.length > 0 ? stored : DEMO_STUDIES)
   }, [])
 
   const filtered = studies.filter(s => {

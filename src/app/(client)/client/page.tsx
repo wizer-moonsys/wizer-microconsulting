@@ -1,5 +1,4 @@
 import { createClient } from "@/lib/supabase/server";
-import { redirect } from "next/navigation";
 import type { ReactNode } from "react";
 import {
   CheckCircle2,
@@ -90,59 +89,84 @@ function formatDate(iso: string | null) {
   });
 }
 
+// âââ Demo data (shown when not logged in) âââââââââââââââââââââââââââââââââââââ
+
+const DEMO_ACTIVATIONS: Activation[] = [
+  {
+    id: "demo-1",
+    title: "Q2 Customer Insights Study",
+    description: "Understanding how our clients experience the onboarding process and where we can improve.",
+    status: "active",
+    target_responses: 50,
+    start_date: "2026-05-01",
+    end_date: "2026-06-15",
+    response_count: 32,
+    question_count: 8,
+  },
+  {
+    id: "demo-2",
+    title: "Pricing Perception Research",
+    description: "Gathering feedback on how customers perceive value across our service tiers.",
+    status: "draft",
+    target_responses: 30,
+    start_date: null,
+    end_date: null,
+    response_count: 0,
+    question_count: 5,
+  },
+  {
+    id: "demo-3",
+    title: "Brand Awareness Deep-Dive",
+    description: "A completed study examining brand recognition among mid-market buyers.",
+    status: "completed",
+    target_responses: 40,
+    start_date: "2026-03-10",
+    end_date: "2026-04-20",
+    response_count: 40,
+    question_count: 10,
+  },
+];
+
 // âââ Page âââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââââ
 
 export default async function ClientDashboardPage() {
-  const supabase = await createClient();
+  let activations: Activation[] = DEMO_ACTIVATIONS;
+  let firstName = "there";
 
-  const { data: { user } } = await supabase.auth.getUser();
-  if (!user) redirect("/login");
+  try {
+    const supabase = await createClient();
+    const { data: { user } } = await supabase.auth.getUser();
 
-  const { data: profile } = await supabase
-    .from("profiles")
-    .select("role, full_name, organization_id")
-    .eq("id", user.id)
-    .single();
+    if (user) {
+      const { data: profile } = await supabase
+        .from("profiles")
+        .select("role, full_name, organization_id")
+        .eq("id", user.id)
+        .single();
 
-  if (!profile || profile.role !== "client") redirect("/");
+      if (profile?.role === "client") {
+        firstName = profile.full_name?.split(" ")[0] ?? "there";
 
-  // Fetch activations linked to this client
-  const { data: rawActivations } = await supabase
-    .from("activations")
-    .select(`
-      id,
-      title,
-      description,
-      status,
-      target_responses,
-      start_date,
-      end_date
-    `)
-    .eq("client_id", user.id)
-    .order("created_at", { ascending: false });
+        const { data: rawActivations } = await supabase
+          .from("activations")
+          .select(`id, title, description, status, target_responses, start_date, end_date`)
+          .eq("client_id", user.id)
+          .order("created_at", { ascending: false });
 
-  // Enrich with counts
-  const activations: Activation[] = await Promise.all(
-    (rawActivations || []).map(async (a) => {
-      const [{ count: responseCount }, { count: questionCount }] = await Promise.all([
-        supabase
-          .from("question_responses")
-          .select("id", { count: "exact", head: true })
-          .eq("activation_id", a.id),
-        supabase
-          .from("activation_questions")
-          .select("id", { count: "exact", head: true })
-          .eq("activation_id", a.id),
-      ]);
-      return {
-        ...a,
-        response_count: responseCount ?? 0,
-        question_count: questionCount ?? 0,
-      };
-    })
-  );
-
-  const firstName = profile.full_name?.split(" ")[0] ?? "there";
+        activations = await Promise.all(
+          (rawActivations || []).map(async (a) => {
+            const [{ count: responseCount }, { count: questionCount }] = await Promise.all([
+              supabase.from("question_responses").select("id", { count: "exact", head: true }).eq("activation_id", a.id),
+              supabase.from("activation_questions").select("id", { count: "exact", head: true }).eq("activation_id", a.id),
+            ]);
+            return { ...a, response_count: responseCount ?? 0, question_count: questionCount ?? 0 };
+          })
+        );
+      }
+    }
+  } catch {
+    // fallback to demo data if Supabase is unavailable
+  }
 
   return (
     <div className="p-6 max-w-3xl mx-auto">
